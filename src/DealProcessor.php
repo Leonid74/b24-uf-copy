@@ -28,269 +28,254 @@ use Throwable;
 
 final class DealProcessor
 {
-	private Bitrix24ClientInterface $client;
-	private StateStorage            $state;
-	private Logger                  $logger;
+    private Bitrix24ClientInterface $client;
+    private StateStorage $state;
+    private Logger $logger;
 
-	/**
-	 * Имя исходного UF-поля.
-	 */
-	private string $sourceField;
+    /**
+     * Имя исходного UF-поля.
+     */
+    private string $sourceField;
 
-	/**
-	 * Имя целевого UF-поля.
-	 */
-	private string $targetField;
+    /**
+     * Имя целевого UF-поля.
+     */
+    private string $targetField;
 
-	/**
-	 * Размер пачки сделок.
-	 */
-	private int $batchSize;
+    /**
+     * Размер пачки сделок.
+     */
+    private int $batchSize;
 
-	/**
-	 * Режим без записи (dry-run).
-	 */
-	private bool $dryRun;
+    /**
+     * Режим без записи (dry-run).
+     */
+    private bool $dryRun;
 
-	/**
-	 * Флаг graceful shutdown (выставляется обработчиком сигналов).
-	 */
-	private bool $shouldStop = false;
+    /**
+     * Флаг graceful shutdown (выставляется обработчиком сигналов).
+     */
+    private bool $shouldStop = false;
 
-	/**
-	 * @param Bitrix24ClientInterface $client      HTTP-клиент Bitrix24
-	 * @param StateStorage            $state       Хранилище состояния
-	 * @param Logger                  $logger      Логгер
-	 * @param string                  $sourceField Имя исходного UF-поля
-	 * @param string                  $targetField Имя целевого UF-поля
-	 * @param int                     $batchSize   Размер пачки (макс. 50)
-	 * @param bool                    $dryRun      Если true - обновления не выполняются
-	 */
-	public function __construct(
-		Bitrix24ClientInterface $client,
-		StateStorage $state,
-		Logger $logger,
-		string $sourceField,
-		string $targetField,
-		int $batchSize = 50,
-		bool $dryRun = false
-	) {
-		$this->client      = $client;
-		$this->state       = $state;
-		$this->logger      = $logger;
-		$this->sourceField = $sourceField;
-		$this->targetField = $targetField;
-		$this->batchSize   = min($batchSize, 50);
-		$this->dryRun      = $dryRun;
-	}
+    /**
+     * @param Bitrix24ClientInterface $client      HTTP-клиент Bitrix24
+     * @param StateStorage            $state       Хранилище состояния
+     * @param Logger                  $logger      Логгер
+     * @param string                  $sourceField Имя исходного UF-поля
+     * @param string                  $targetField Имя целевого UF-поля
+     * @param int                     $batchSize   Размер пачки (макс. 50)
+     * @param bool                    $dryRun      Если true - обновления не выполняются
+     */
+    public function __construct(
+        Bitrix24ClientInterface $client,
+        StateStorage $state,
+        Logger $logger,
+        string $sourceField,
+        string $targetField,
+        int $batchSize = 50,
+        bool $dryRun = false
+    ) {
+        $this->client      = $client;
+        $this->state       = $state;
+        $this->logger      = $logger;
+        $this->sourceField = $sourceField;
+        $this->targetField = $targetField;
+        $this->batchSize   = min($batchSize, 50);
+        $this->dryRun      = $dryRun;
+    }
 
-	/**
-	 * Запросить остановку обработки после текущей пачки (вызывается из обработчика сигналов).
-	 */
-	public function requestStop(): void
-	{
-		$this->shouldStop = true;
-		$this->logger->warning('Получен сигнал остановки, завершу текущую пачку и выйду');
-	}
+    /**
+     * Запросить остановку обработки после текущей пачки (вызывается из обработчика сигналов).
+     */
+    public function requestStop(): void
+    {
+        $this->shouldStop = true;
+        $this->logger->warning('Получен сигнал остановки, завершу текущую пачку и выйду');
+    }
 
-	/**
-	 * Запустить обработку.
-	 *
-	 * @return bool true - если обработка завершена полностью; false - если прервана
-	 *
-	 * @throws RuntimeException При неисправимой ошибке HTTP-клиента
-	 */
-	public function run(): bool
-	{
-		$mode = $this->dryRun ? 'DRY-RUN' : 'LIVE';
-		$this->logger->info("Старт обработки в режиме $mode", [
-			'source_field' => $this->sourceField,
-			'target_field' => $this->targetField,
-			'cursor'       => $this->state->getLastProcessedId(),
-		]);
+    /**
+     * Запустить обработку.
+     *
+     * @return bool true - если обработка завершена полностью; false - если прервана
+     *
+     * @throws RuntimeException При неисправимой ошибке HTTP-клиента
+     */
+    public function run(): bool
+    {
+        $mode = $this->dryRun ? 'DRY-RUN' : 'LIVE';
+        $this->logger->info("Старт обработки в режиме $mode", [
+            'source_field' => $this->sourceField,
+            'target_field' => $this->targetField,
+            'cursor'       => $this->state->getLastProcessedId(),
+        ]);
 
-		while (true)
-		{
-			if ($this->shouldStop)
-			{
-				$this->logger->info('Обработка остановлена пользователем');
-				try
-				{
-					$this->state->save();
-				} catch (Throwable $e)
-				{
-					$this->logger->error('Не удалось сохранить состояние при остановке: ' . $e->getMessage());
-				}
+        while (true) {
+            if ($this->shouldStop) {
+                $this->logger->info('Обработка остановлена пользователем');
 
-				return false;
-			}
+                try {
+                    $this->state->save();
+                } catch (Throwable $e) {
+                    $this->logger->error('Не удалось сохранить состояние при остановке: ' . $e->getMessage());
+                }
 
-			$cursor = $this->state->getLastProcessedId();
-			$deals  = $this->fetchBatch($cursor);
+                return false;
+            }
 
-			if ($deals === [])
-			{
-				$this->logger->info('Сделки закончились - обработка завершена');
-				try
-				{
-					$this->state->markFinished();
-				} catch (Throwable $e)
-				{
-					$this->logger->error('Не удалось сохранить финальное состояние: ' . $e->getMessage());
-				}
+            $cursor = $this->state->getLastProcessedId();
+            $deals  = $this->fetchBatch($cursor);
 
-				return true;
-			}
+            if ($deals === []) {
+                $this->logger->info('Сделки закончились - обработка завершена');
 
-			$this->processBatch($deals);
+                try {
+                    $this->state->markFinished();
+                } catch (Throwable $e) {
+                    $this->logger->error('Не удалось сохранить финальное состояние: ' . $e->getMessage());
+                }
 
-			// Сдвигаем курсор на максимальный ID пачки
-			$maxId = 0;
-			foreach ($deals as $deal)
-			{
-				$id = (int)$deal['ID'];
-				if ($id > $maxId)
-				{
-					$maxId = $id;
-				}
-			}
-			$this->state->setLastProcessedId($maxId);
-			try
-			{
-				$this->state->save();
-			} catch (Throwable $e)
-			{
-				$this->logger->error('Не удалось сохранить состояние после пачки: ' . $e->getMessage());
-			}
-		}
-	}
+                return true;
+            }
 
-	/**
-	 * Получить пачку сделок начиная с ID > $afterId.
-	 *
-	 * Используется фильтр >ID + сортировка ID ASC + start: -1 для отключения
-	 * подсчёта общего количества (ускоряет запрос на больших объёмах).
-	 *
-	 * @param int $afterId ID, начиная с которого (не включительно) запрашивать сделки
-	 *
-	 * @return list<array<string, mixed>> Массив сделок (минимум - ID, sourceField, targetField)
-	 */
-	private function fetchBatch(int $afterId): array
-	{
-		$response = $this->client->call('crm.deal.list', [
-			'order'  => ['ID' => 'ASC'],
-			'filter' => ['>ID' => $afterId],
-			'select' => ['ID', $this->sourceField, $this->targetField],
-			'start'  => -1, // отключаем подсчёт total → быстрее
-		]);
+            $this->processBatch($deals);
 
-		/** @var list<array<string, mixed>> $deals */
-		$deals = $response['result'] ?? [];
+            // Сдвигаем курсор на максимальный ID пачки
+            $maxId = 0;
+            foreach ($deals as $deal) {
+                $id = (int) $deal['ID'];
+                if ($id > $maxId) {
+                    $maxId = $id;
+                }
+            }
+            $this->state->setLastProcessedId($maxId);
 
-		// crm.deal.list возвращает максимум 50 за раз - нам этого достаточно
-		return array_slice($deals, 0, $this->batchSize);
-	}
+            try {
+                $this->state->save();
+            } catch (Throwable $e) {
+                $this->logger->error('Не удалось сохранить состояние после пачки: ' . $e->getMessage());
+            }
+        }
+    }
 
-	/**
-	 * Обработать пачку сделок: отфильтровать кандидатов на обновление и выполнить batch.update.
-	 *
-	 * @param list<array<string, mixed>> $deals
-	 */
-	private function processBatch(array $deals): void
-	{
-		if ($deals === [])
-		{
-			return;
-		}
+    /**
+     * Получить пачку сделок начиная с ID > $afterId.
+     *
+     * Используется фильтр >ID + сортировка ID ASC + start: -1 для отключения
+     * подсчёта общего количества (ускоряет запрос на больших объёмах).
+     *
+     * @param int $afterId ID, начиная с которого (не включительно) запрашивать сделки
+     *
+     * @return list<array<string, mixed>> Массив сделок (минимум - ID, sourceField, targetField)
+     */
+    private function fetchBatch(int $afterId): array
+    {
+        $response = $this->client->call('crm.deal.list', [
+            'order'  => ['ID' => 'ASC'],
+            'filter' => ['>ID' => $afterId],
+            'select' => ['ID', $this->sourceField, $this->targetField],
+            'start'  => -1, // отключаем подсчёт total → быстрее
+        ]);
 
-		$this->state->incrementStat('scanned', count($deals));
+        /** @var list<array<string, mixed>> $deals */
+        $deals = $response['result'] ?? [];
 
-		$updates = [];
-		foreach ($deals as $deal)
-		{
-			$id          = (int)$deal['ID'];
-			$sourceValue = $deal[$this->sourceField] ?? null;
-			$targetValue = $deal[$this->targetField] ?? null;
+        // crm.deal.list возвращает максимум 50 за раз - нам этого достаточно
+        return array_slice($deals, 0, $this->batchSize);
+    }
 
-			// По договорённости: '0' считаем пустым → используем empty()
-			if (empty($sourceValue))
-			{
-				$this->state->incrementStat('skipped_empty_source');
-				continue;
-			}
+    /**
+     * Обработать пачку сделок: отфильтровать кандидатов на обновление и выполнить batch.update.
+     *
+     * @param list<array<string, mixed>> $deals
+     */
+    private function processBatch(array $deals): void
+    {
+        if ($deals === []) {
+            return;
+        }
 
-			// Целевое поле должно быть пустым (не перезаписываем)
-			if (!empty($targetValue))
-			{
-				$this->state->incrementStat('skipped_target_filled');
-				continue;
-			}
+        $this->state->incrementStat('scanned', count($deals));
 
-			$updates[$id] = $sourceValue;
-		}
+        $updates = [];
+        foreach ($deals as $deal) {
+            $id          = (int) $deal['ID'];
+            $sourceValue = $deal[$this->sourceField] ?? null;
+            $targetValue = $deal[$this->targetField] ?? null;
 
-		$firstId = (int)$deals[0]['ID'];
-		$lastId  = (int)$deals[array_key_last($deals)]['ID'];
-		$this->logger->info(
-			"Пачка ID [$firstId..$lastId]: всего {" . count($deals) . '}, к обновлению ' . count($updates)
-		);
+            // По договорённости: '0' считаем пустым → используем empty()
+            if (empty($sourceValue)) {
+                $this->state->incrementStat('skipped_empty_source');
 
-		if ($updates === [])
-		{
-			return;
-		}
+                continue;
+            }
 
-		if ($this->dryRun)
-		{
-			$this->state->incrementStat('updated', count($updates));
-			$this->logger->info('DRY-RUN: пропускаю фактическое обновление', ['ids' => array_keys($updates)]);
+            // Целевое поле должно быть пустым (не перезаписываем)
+            if (!empty($targetValue)) {
+                $this->state->incrementStat('skipped_target_filled');
 
-			return;
-		}
+                continue;
+            }
 
-		$this->executeBatchUpdate($updates);
-	}
+            $updates[$id] = $sourceValue;
+        }
 
-	/**
-	 * Выполнить batch-обновление сделок.
-	 *
-	 * @param array<int, mixed> $updates Карта dealId => значение для записи в targetField
-	 */
-	private function executeBatchUpdate(array $updates): void
-	{
-		$commands = [];
-		foreach ($updates as $dealId => $value)
-		{
-			$commands["upd_$dealId"] = [
-				'method' => 'crm.deal.update',
-				'params' => [
-					'id'     => $dealId,
-					'fields' => [
-						$this->targetField => $value,
-					],
-				],
-			];
-		}
+        $firstId = (int) $deals[0]['ID'];
+        $lastId  = (int) $deals[array_key_last($deals)]['ID'];
+        $this->logger->info(
+            "Пачка ID [$firstId..$lastId]: всего {" . count($deals) . '}, к обновлению ' . count($updates)
+        );
 
-		$response = $this->client->batch($commands);
+        if ($updates === []) {
+            return;
+        }
 
-		$errors       = $response['result_error'];
-		$successCount = count($commands) - count($errors);
+        if ($this->dryRun) {
+            $this->state->incrementStat('updated', count($updates));
+            $this->logger->info('DRY-RUN: пропускаю фактическое обновление', ['ids' => array_keys($updates)]);
 
-		$this->state->incrementStat('updated', $successCount);
+            return;
+        }
 
-		if ($errors !== [])
-		{
-			$this->state->incrementStat('errors', count($errors));
-			foreach ($errors as $cmdId => $err)
-			{
-				// Извлекаем ID сделки из commandId вида "upd_12345"
-				$dealId = (int)substr((string)$cmdId, 4);
-				$this->logger->error("Ошибка обновления сделки $dealId", [
-					'command_id' => $cmdId,
-					'error'      => $err,
-				]);
-			}
-		}
-	}
+        $this->executeBatchUpdate($updates);
+    }
+
+    /**
+     * Выполнить batch-обновление сделок.
+     *
+     * @param array<int, mixed> $updates Карта dealId => значение для записи в targetField
+     */
+    private function executeBatchUpdate(array $updates): void
+    {
+        $commands = [];
+        foreach ($updates as $dealId => $value) {
+            $commands["upd_$dealId"] = [
+                'method' => 'crm.deal.update',
+                'params' => [
+                    'id'     => $dealId,
+                    'fields' => [
+                        $this->targetField => $value,
+                    ],
+                ],
+            ];
+        }
+
+        $response = $this->client->batch($commands);
+
+        $errors       = $response['result_error'];
+        $successCount = count($commands) - count($errors);
+
+        $this->state->incrementStat('updated', $successCount);
+
+        if ($errors !== []) {
+            $this->state->incrementStat('errors', count($errors));
+            foreach ($errors as $cmdId => $err) {
+                // Извлекаем ID сделки из commandId вида "upd_12345"
+                $dealId = (int) substr((string) $cmdId, 4);
+                $this->logger->error("Ошибка обновления сделки $dealId", [
+                    'command_id' => $cmdId,
+                    'error'      => $err,
+                ]);
+            }
+        }
+    }
 }

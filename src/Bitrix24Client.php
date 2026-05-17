@@ -56,7 +56,6 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      * Длительность принудительной паузы при превышении operating-порога (сек).
      */
     private int $operatingCooldown;
-
     private Logger $logger;
 
     /**
@@ -123,8 +122,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         }
 
         $cmd = [];
-	    /** @noinspection PhpLoopCanBeConvertedToArrayMapInspection */
-	    foreach ($commands as $id => $c) {
+        /** @noinspection PhpLoopCanBeConvertedToArrayMapInspection */
+        foreach ($commands as $id => $c) {
             // Bitrix24 ожидает строку вида "method?param1=value&param2[key]=value"
             $cmd[$id] = $c['method'] . '?' . http_build_query($c['params']);
         }
@@ -140,12 +139,12 @@ final class Bitrix24Client implements Bitrix24ClientInterface
             return ['result' => [], 'result_error' => [], 'result_total' => []];
         }
 
-        $innerResult      = $raw['result'] ?? [];
+        $innerResult      = $raw['result']       ?? [];
         $innerResultError = $raw['result_error'] ?? [];
         $innerResultTotal = $raw['result_total'] ?? [];
 
         return [
-            'result'       => is_array($innerResult)      ? $innerResult      : [],
+            'result'       => is_array($innerResult) ? $innerResult : [],
             'result_error' => is_array($innerResultError) ? $innerResultError : [],
             'result_total' => is_array($innerResultTotal) ? $innerResultTotal : [],
         ];
@@ -202,7 +201,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                     'error'   => $curlError,
                 ]);
                 $this->sleepBackoff($attempt);
-                $attempt++;
+                ++$attempt;
+
                 continue;
             }
 
@@ -218,7 +218,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                     'retry_after' => $retryAfter,
                 ]);
                 sleep($wait);
-                $attempt++;
+                ++$attempt;
+
                 continue;
             }
 
@@ -230,7 +231,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                     'body_preview' => substr($body, 0, 200),
                 ]);
                 $this->sleepBackoff($attempt);
-                $attempt++;
+                ++$attempt;
+
                 continue;
             }
 
@@ -246,7 +248,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                         'description' => $errorDesc,
                     ]);
                     $this->sleepBackoff($attempt);
-                    $attempt++;
+                    ++$attempt;
+
                     continue;
                 }
 

@@ -12,6 +12,9 @@ use Leonid74\B24UfCopy\StateStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 #[CoversClass(StateStorage::class)]
 final class StateStorageTest extends TestCase
 {
