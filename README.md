@@ -24,6 +24,7 @@
    git clone https://github.com/Leonid74/b24-uf-copy.git
    cd b24-uf-copy
    ```
+   или скачайте ZIP-архив вручную со [страницы репозитория](https://github.com/Leonid74/b24-uf-copy) и распакуйте его.
 2. Установите зависимости:
    ```bash
    composer install
