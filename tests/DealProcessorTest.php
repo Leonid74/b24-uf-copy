@@ -6,12 +6,12 @@ declare(strict_types=1);
  * Тесты основного цикла обработки сделок.
  */
 
-namespace B24UfCopy\Tests;
+namespace Leonid74\B24UfCopy\Tests;
 
-use B24UfCopy\Bitrix24ClientInterface;
-use B24UfCopy\DealProcessor;
-use B24UfCopy\Logger;
-use B24UfCopy\StateStorage;
+use Leonid74\B24UfCopy\Bitrix24ClientInterface;
+use Leonid74\B24UfCopy\DealProcessor;
+use Leonid74\B24UfCopy\Logger;
+use Leonid74\B24UfCopy\StateStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

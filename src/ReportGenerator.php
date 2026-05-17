@@ -14,7 +14,7 @@ declare(strict_types=1);
  * @license   The 3-Clause BSD License (https://opensource.org/license/bsd-3-clause)
  */
 
-namespace B24UfCopy;
+namespace Leonid74\B24UfCopy;
 
 use RuntimeException;
 

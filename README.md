@@ -12,15 +12,24 @@
   - Обработка HTTP 503 + `Retry-After`.
   - Экспоненциальный backoff при сетевых сбоях.
 - Идемпотентность: целевое поле перезаписывается **только если оно пустое**.
-- `'0'` в исходном поле считается пустым значением (используется `empty()`).
+- Исходное поле проверяется через `empty()`: `''`, `'0'`, `null`, `0` считаются пустыми.
 - Возобновление с курсора последнего обработанного ID.
 - Graceful shutdown по `SIGINT`/`SIGTERM` (Ctrl+C) - успевает дописать состояние.
 - HTML-отчёт по итогам.
 
 ## Установка
 
-1. Создайте входящий вебхук в Bitrix24 с правом `crm` и скопируйте его URL.
-2. Откройте `config.php` и заполните:
+1. Клонируйте репозиторий:
+   ```bash
+   git clone https://github.com/Leonid74/b24-uf-copy.git
+   cd b24-uf-copy
+   ```
+2. Установите зависимости:
+   ```bash
+   composer install
+   ```
+3. Создайте входящий вебхук в Bitrix24 с правом `crm` и скопируйте его URL.
+4. Откройте `config.php` и заполните:
    - `webhook_url`  - URL вебхука.
    - `source_field` - имя исходного UF-поля (например `UF_CRM_1234567890`).
    - `target_field` - имя целевого UF-поля.
@@ -54,14 +63,21 @@ php run.php --help
 
 ```
 b24-uf-copy/
+├── composer.json
 ├── config.php
 ├── run.php
+├── phpstan.neon
+├── phpunit.xml
 ├── src/
 │   ├── Bitrix24Client.php   - HTTP-клиент с batch и троттлингом
 │   ├── DealProcessor.php    - основной цикл обработки
 │   ├── StateStorage.php     - состояние (атомарная запись JSON)
 │   ├── ReportGenerator.php  - HTML-отчёт
 │   └── Logger.php           - логгер
+├── tests/
+│   ├── StateStorageTest.php
+│   ├── DealProcessorTest.php
+│   └── ReportGeneratorTest.php
 ├── state/
 │   └── progress.json        - состояние (создаётся автоматически)
 └── logs/
@@ -72,6 +88,7 @@ b24-uf-copy/
 ## Требования
 
 - PHP 8.2+
+- Composer 2+
 - Расширения: `curl`, `json`, `pcntl` (опционально, для Ctrl+C)
 
 ## Copyrights
