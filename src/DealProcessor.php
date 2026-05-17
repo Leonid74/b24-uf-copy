@@ -14,7 +14,7 @@ declare(strict_types=1);
  *
  * PHP version 8.2+
  *
- * @version   1.0
+ * @version   1.1
  *
  * @author    Leonid Sheikman <Leonid74>
  * @copyright 2026 Leonid Sheikman
@@ -123,7 +123,11 @@ final class DealProcessor
 
             if ($deals === []) {
                 $this->logger->info('Сделки закончились - обработка завершена');
-                $this->state->markFinished();
+                try {
+                    $this->state->markFinished();
+                } catch (\Throwable $e) {
+                    $this->logger->error('Не удалось сохранить финальное состояние: ' . $e->getMessage());
+                }
 
                 return true;
             }

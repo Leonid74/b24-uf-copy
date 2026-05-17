@@ -14,7 +14,7 @@ declare(strict_types=1);
  *
  * PHP version 8.2+
  *
- * @version   1.0
+ * @version   1.1
  *
  * @author    Leonid Sheikman <Leonid74>
  * @copyright 2026 Leonid Sheikman
@@ -52,7 +52,12 @@ $state  = new StateStorage($config['state_file']);
 // Обработка флагов --restart / --resume
 if ($options['restart']) {
     $logger->info('Флаг --restart: сбрасываю состояние и начинаю с нуля');
-    $state->reset();
+    try {
+        $state->reset();
+    } catch (Throwable $e) {
+        fwrite(STDERR, "Ошибка сброса состояния: " . $e->getMessage() . "\n");
+        exit(1);
+    }
 } elseif ($state->isFinished() && !$options['resume']) {
     $logger->warning('Предыдущая обработка уже завершена. Для повторного прогона используйте --restart');
     exit(0);
