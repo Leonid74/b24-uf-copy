@@ -49,8 +49,19 @@ final class Logger
     }
 
     /**
+     * Закрыть открытый файл лога.
+     */
+    public function __destruct()
+    {
+        if (is_resource($this->fileHandle)) {
+            fclose($this->fileHandle);
+        }
+    }
+
+    /**
      * Информационное сообщение.
      *
+     * @param string               $message
      * @param array<string, mixed> $context
      */
     public function info(string $message, array $context = []): void
@@ -61,6 +72,7 @@ final class Logger
     /**
      * Предупреждение.
      *
+     * @param string               $message
      * @param array<string, mixed> $context
      */
     public function warning(string $message, array $context = []): void
@@ -71,21 +83,12 @@ final class Logger
     /**
      * Ошибка.
      *
+     * @param string               $message
      * @param array<string, mixed> $context
      */
     public function error(string $message, array $context = []): void
     {
         $this->log('ERROR', $message, $context);
-    }
-
-    /**
-     * Закрыть открытый файл лога.
-     */
-    public function __destruct()
-    {
-        if (is_resource($this->fileHandle)) {
-            fclose($this->fileHandle);
-        }
     }
 
     /**
@@ -111,6 +114,8 @@ final class Logger
 
     /**
      * Запись строки в текущий файл лога (с суточной ротацией).
+     *
+     * @param string $line
      */
     private function writeToFile(string $line): void
     {
@@ -120,7 +125,7 @@ final class Logger
                 fclose($this->fileHandle);
             }
             $path   = $this->logDir . "/run-$today.log";
-            $handle = @fopen($path, 'ab');
+            $handle = @fopen($path, 'a');
             if ($handle === false) {
                 // Файловая система недоступна - продолжаем без записи в файл
                 $this->fileHandle = null;

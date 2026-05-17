@@ -69,6 +69,8 @@ final class StateStorage
 
     /**
      * Установить ID последней обработанной сделки.
+     *
+     * @param int $id
      */
     public function setLastProcessedId(int $id): void
     {
@@ -161,6 +163,7 @@ final class StateStorage
 
         if (!rename($tmpPath, $this->filePath)) {
             @unlink($tmpPath);
+
             throw new RuntimeException("Не удалось переименовать файл состояния в: $this->filePath");
         }
     }
@@ -224,7 +227,7 @@ final class StateStorage
                 'skipped_target_filled' => 0,
                 'errors'                => 0,
             ],
-            'finished'          => false,
+            'finished' => false,
         ];
     }
 }

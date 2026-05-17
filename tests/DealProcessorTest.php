@@ -16,6 +16,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 #[CoversClass(DealProcessor::class)]
 final class DealProcessorTest extends TestCase
 {
@@ -24,7 +27,9 @@ final class DealProcessorTest extends TestCase
     private StateStorage $state;
     private Logger $logger;
 
-    /** @var Bitrix24ClientInterface&MockObject */
+    /**
+     * @var Bitrix24ClientInterface&MockObject
+     */
     private Bitrix24ClientInterface $client;
 
     protected function setUp(): void
@@ -45,33 +50,13 @@ final class DealProcessorTest extends TestCase
         @rmdir($this->logDir);
     }
 
-    private function makeProcessor(bool $dryRun = false): DealProcessor
-    {
-        return new DealProcessor(
-            client: $this->client,
-            state: $this->state,
-            logger: $this->logger,
-            sourceField: 'UF_CRM_SOURCE',
-            targetField: 'UF_CRM_TARGET',
-            batchSize: 50,
-            dryRun: $dryRun,
-        );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function emptyBatchResponse(): array
-    {
-        return ['result' => [], 'result_error' => [], 'result_total' => []];
-    }
-
     public function testRunReturnsTrueOnEmptyPortal(): void
     {
         $this->client
             ->expects(self::once())
             ->method('call')
-            ->willReturn(['result' => []]);
+            ->willReturn(['result' => []])
+        ;
 
         self::assertTrue($this->makeProcessor()->run());
     }
@@ -117,8 +102,8 @@ final class DealProcessorTest extends TestCase
     public function testSkipsDealsWithEmptySourceField(): void
     {
         $deals = [
-            ['ID' => '1', 'UF_CRM_SOURCE' => '',   'UF_CRM_TARGET' => ''],
-            ['ID' => '2', 'UF_CRM_SOURCE' => '0',  'UF_CRM_TARGET' => ''],
+            ['ID' => '1', 'UF_CRM_SOURCE' => '', 'UF_CRM_TARGET' => ''],
+            ['ID' => '2', 'UF_CRM_SOURCE' => '0', 'UF_CRM_TARGET' => ''],
             ['ID' => '3', 'UF_CRM_SOURCE' => null, 'UF_CRM_TARGET' => ''],
         ];
 
@@ -155,7 +140,7 @@ final class DealProcessorTest extends TestCase
     public function testUpdatesDealsWithValidFields(): void
     {
         $deals = [
-            ['ID' => '10', 'UF_CRM_SOURCE' => 'src_val',  'UF_CRM_TARGET' => ''],
+            ['ID' => '10', 'UF_CRM_SOURCE' => 'src_val', 'UF_CRM_TARGET' => ''],
             ['ID' => '20', 'UF_CRM_SOURCE' => 'src_val2', 'UF_CRM_TARGET' => ''],
         ];
 
@@ -169,11 +154,12 @@ final class DealProcessorTest extends TestCase
             ->method('batch')
             ->with(self::callback(static function (array $commands): bool {
                 return isset($commands['upd_10'], $commands['upd_20'])
-                    && $commands['upd_10']['method'] === 'crm.deal.update'
+                    && $commands['upd_10']['method']                            === 'crm.deal.update'
                     && $commands['upd_10']['params']['fields']['UF_CRM_TARGET'] === 'src_val'
                     && $commands['upd_20']['params']['fields']['UF_CRM_TARGET'] === 'src_val2';
             }))
-            ->willReturn(['result' => ['upd_10' => true, 'upd_20' => true], 'result_error' => [], 'result_total' => []]);
+            ->willReturn(['result' => ['upd_10' => true, 'upd_20' => true], 'result_error' => [], 'result_total' => []])
+        ;
 
         $this->makeProcessor()->run();
 
@@ -184,7 +170,7 @@ final class DealProcessorTest extends TestCase
     public function testCursorAdvancesToMaxIdInBatch(): void
     {
         $deals = [
-            ['ID' => '5',  'UF_CRM_SOURCE' => 'val', 'UF_CRM_TARGET' => ''],
+            ['ID' => '5', 'UF_CRM_SOURCE' => 'val', 'UF_CRM_TARGET' => ''],
             ['ID' => '42', 'UF_CRM_SOURCE' => 'val', 'UF_CRM_TARGET' => ''],
         ];
 
@@ -225,9 +211,9 @@ final class DealProcessorTest extends TestCase
     public function testMixedDealsFilteredCorrectly(): void
     {
         $deals = [
-            ['ID' => '1', 'UF_CRM_SOURCE' => 'val',  'UF_CRM_TARGET' => ''],        // обновляем
-            ['ID' => '2', 'UF_CRM_SOURCE' => '',      'UF_CRM_TARGET' => ''],        // пустой source
-            ['ID' => '3', 'UF_CRM_SOURCE' => 'val',  'UF_CRM_TARGET' => 'filled'],  // target заполнен
+            ['ID' => '1', 'UF_CRM_SOURCE' => 'val', 'UF_CRM_TARGET' => ''],        // обновляем
+            ['ID' => '2', 'UF_CRM_SOURCE' => '', 'UF_CRM_TARGET' => ''],        // пустой source
+            ['ID' => '3', 'UF_CRM_SOURCE' => 'val', 'UF_CRM_TARGET' => 'filled'],  // target заполнен
             ['ID' => '4', 'UF_CRM_SOURCE' => 'val2', 'UF_CRM_TARGET' => ''],        // обновляем
         ];
 
@@ -236,7 +222,8 @@ final class DealProcessorTest extends TestCase
             ['result' => []],
         );
         $this->client->method('batch')
-            ->willReturn(['result' => ['upd_1' => true, 'upd_4' => true], 'result_error' => [], 'result_total' => []]);
+            ->willReturn(['result' => ['upd_1' => true, 'upd_4' => true], 'result_error' => [], 'result_total' => []])
+        ;
 
         $this->makeProcessor()->run();
 
@@ -244,5 +231,26 @@ final class DealProcessorTest extends TestCase
         self::assertSame(2, $this->state->getStats()['updated']);
         self::assertSame(1, $this->state->getStats()['skipped_empty_source']);
         self::assertSame(1, $this->state->getStats()['skipped_target_filled']);
+    }
+
+    private function makeProcessor(bool $dryRun = false): DealProcessor
+    {
+        return new DealProcessor(
+            client: $this->client,
+            state: $this->state,
+            logger: $this->logger,
+            sourceField: 'UF_CRM_SOURCE',
+            targetField: 'UF_CRM_TARGET',
+            batchSize: 50,
+            dryRun: $dryRun,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyBatchResponse(): array
+    {
+        return ['result' => [], 'result_error' => [], 'result_total' => []];
     }
 }

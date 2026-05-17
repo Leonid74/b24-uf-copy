@@ -12,6 +12,9 @@ use Leonid74\B24UfCopy\ReportGenerator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 #[CoversClass(ReportGenerator::class)]
 final class ReportGeneratorTest extends TestCase
 {
@@ -27,61 +30,6 @@ final class ReportGeneratorTest extends TestCase
     protected function tearDown(): void
     {
         $this->removeDir($this->tmpDir);
-    }
-
-    private function removeDir(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-        foreach (scandir($dir) ?: [] as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-            $path = $dir . '/' . $item;
-            is_dir($path) ? $this->removeDir($path) : @unlink($path);
-        }
-        @rmdir($dir);
-    }
-
-    /**
-     * @param array<string, mixed> $overrides
-     *
-     * @return array<string, mixed>
-     */
-    private function makeSnapshot(array $overrides = []): array
-    {
-        return array_merge([
-            'started_at'        => '2026-01-01T10:00:00+00:00',
-            'updated_at'        => '2026-01-01T11:00:00+00:00',
-            'last_processed_id' => 500,
-            'stats'             => [
-                'scanned'               => 1000,
-                'updated'               => 800,
-                'skipped_empty_source'  => 100,
-                'skipped_target_filled' => 100,
-                'errors'                => 5,
-            ],
-            'finished'          => true,
-        ], $overrides);
-    }
-
-    private function generate(
-        bool $dryRun = false,
-        bool $completed = true,
-        string $sourceField = 'UF_CRM_SOURCE',
-        string $targetField = 'UF_CRM_TARGET',
-    ): string {
-        (new ReportGenerator())->generate(
-            outputPath: $this->outputFile,
-            stateData: $this->makeSnapshot(),
-            sourceField: $sourceField,
-            targetField: $targetField,
-            dryRun: $dryRun,
-            completed: $completed,
-        );
-
-        return (string) file_get_contents($this->outputFile);
     }
 
     public function testGeneratesHtmlFile(): void
@@ -177,5 +125,60 @@ final class ReportGeneratorTest extends TestCase
 
         self::assertStringNotContainsString('<script>alert(1)</script>', $html);
         self::assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    private function removeDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        foreach (scandir($dir) ?: [] as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . '/' . $item;
+            is_dir($path) ? $this->removeDir($path) : @unlink($path);
+        }
+        @rmdir($dir);
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
+    private function makeSnapshot(array $overrides = []): array
+    {
+        return array_merge([
+            'started_at'        => '2026-01-01T10:00:00+00:00',
+            'updated_at'        => '2026-01-01T11:00:00+00:00',
+            'last_processed_id' => 500,
+            'stats'             => [
+                'scanned'               => 1000,
+                'updated'               => 800,
+                'skipped_empty_source'  => 100,
+                'skipped_target_filled' => 100,
+                'errors'                => 5,
+            ],
+            'finished' => true,
+        ], $overrides);
+    }
+
+    private function generate(
+        bool $dryRun = false,
+        bool $completed = true,
+        string $sourceField = 'UF_CRM_SOURCE',
+        string $targetField = 'UF_CRM_TARGET',
+    ): string {
+        (new ReportGenerator())->generate(
+            outputPath: $this->outputFile,
+            stateData: $this->makeSnapshot(),
+            sourceField: $sourceField,
+            targetField: $targetField,
+            dryRun: $dryRun,
+            completed: $completed,
+        );
+
+        return (string) file_get_contents($this->outputFile);
     }
 }
