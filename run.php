@@ -14,7 +14,7 @@ declare(strict_types=1);
  *
  * PHP version 8.2+
  *
- * @version   1.1
+ * @version   1.2
  *
  * @author    Leonid Sheikman <Leonid74>
  * @copyright 2026 Leonid Sheikman
@@ -77,6 +77,7 @@ $client = new Bitrix24Client(
     retryBaseDelay: $config['retry_base_delay'],
     operatingThreshold: $config['operating_threshold'],
     operatingCooldown: $config['operating_cooldown'],
+    sslVerify: $config['ssl_verify'] ?? true,
 );
 
 $processor = new DealProcessor(

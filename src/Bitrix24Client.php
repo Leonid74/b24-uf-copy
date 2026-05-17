@@ -13,7 +13,7 @@ declare(strict_types=1);
  *
  * PHP version 8.2+
  *
- * @version   1.0
+ * @version   1.1
  *
  * @author    Leonid Sheikman <Leonid74>
  * @copyright 2026 Leonid Sheikman
@@ -56,6 +56,11 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      * Длительность принудительной паузы при превышении operating-порога (сек).
      */
     private int $operatingCooldown;
+
+    /**
+     * Проверять SSL-сертификат сервера. false допустимо только при локальной разработке.
+     */
+    private bool $sslVerify;
     private Logger $logger;
 
     /**
@@ -66,6 +71,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      * @param int    $retryBaseDelay     База backoff (сек)
      * @param float  $operatingThreshold Порог time.operating (сек)
      * @param int    $operatingCooldown  Cooldown при превышении (сек)
+     * @param bool   $sslVerify          Проверять SSL-сертификат (false только для локальной разработки)
      */
     public function __construct(
         string $webhookUrl,
@@ -74,7 +80,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         int $maxRetries = 3,
         int $retryBaseDelay = 1,
         float $operatingThreshold = 450.0,
-        int $operatingCooldown = 30
+        int $operatingCooldown = 30,
+        bool $sslVerify = true
     ) {
         $this->webhookUrl         = rtrim($webhookUrl, '/') . '/';
         $this->logger             = $logger;
@@ -83,6 +90,11 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         $this->retryBaseDelay     = $retryBaseDelay;
         $this->operatingThreshold = $operatingThreshold;
         $this->operatingCooldown  = $operatingCooldown;
+        $this->sslVerify          = $sslVerify;
+
+        if (!$sslVerify) {
+            $logger->warning('Проверка SSL-сертификата отключена (ssl_verify=false). Используйте только при локальной разработке.');
+        }
     }
 
     /**
@@ -180,8 +192,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                 CURLOPT_HEADER         => true,
                 CURLOPT_CONNECTTIMEOUT => 10,
                 CURLOPT_TIMEOUT        => 60,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_SSL_VERIFYPEER => $this->sslVerify,
+                CURLOPT_SSL_VERIFYHOST => $this->sslVerify ? 2 : 0,
                 CURLOPT_HTTPHEADER     => ['Accept: application/json'],
             ]);
 
