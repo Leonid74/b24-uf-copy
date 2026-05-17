@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * PHP version 8.2+
  *
- * @version   1.0
+ * @version   1.1
  *
  * @author    Leonid Sheikman <Leonid74>
  * @copyright 2026 Leonid Sheikman
@@ -53,4 +53,10 @@ return [
 
     // Путь к HTML-отчёту.
     'report_file' => __DIR__ . '/logs/report.html',
+
+    // Проверять SSL-сертификат сервера Bitrix24.
+    // Установите false, если запускаете локально и получаете ошибку:
+    // "SSL certificate problem: self-signed certificate in certificate chain".
+    // Не отключайте в production-среде без необходимости.
+    'ssl_verify' => true,
 ];
