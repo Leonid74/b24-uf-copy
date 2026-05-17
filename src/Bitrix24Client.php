@@ -123,7 +123,8 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         }
 
         $cmd = [];
-        foreach ($commands as $id => $c) {
+	    /** @noinspection PhpLoopCanBeConvertedToArrayMapInspection */
+	    foreach ($commands as $id => $c) {
             // Bitrix24 ожидает строку вида "method?param1=value&param2[key]=value"
             $cmd[$id] = $c['method'] . '?' . http_build_query($c['params']);
         }
