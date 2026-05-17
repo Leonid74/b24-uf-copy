@@ -48,6 +48,10 @@ final class StateStorage
 
     /**
      * Полный сброс состояния (используется при --restart).
+     *
+     * @throws RuntimeException При невозможности записать файл
+     * @throws JsonException    При ошибках сериализации
+     * @throws RandomException  При ошибках генератора случайных чисел
      */
     public function reset(): void
     {
@@ -115,6 +119,10 @@ final class StateStorage
 
     /**
      * Пометить обработку как завершённую.
+     *
+     * @throws RuntimeException При невозможности записать файл
+     * @throws JsonException    При ошибках сериализации
+     * @throws RandomException  При ошибках генератора случайных чисел
      */
     public function markFinished(): void
     {
