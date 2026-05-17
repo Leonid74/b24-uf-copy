@@ -133,14 +133,20 @@ final class Bitrix24Client implements Bitrix24ClientInterface
             'cmd'  => $cmd,
         ]);
 
-        /** @var array{result: array<string, mixed>, result_error: array<string, mixed>, result_total: array<string, mixed>} $result */
-        $result = $response['result'] ?? [];
-
         // Bitrix24 возвращает структуру вида { result: { result: {...}, result_error: {...}, result_total: {...} } }
+        $raw = $response['result'];
+        if (!is_array($raw)) {
+            return ['result' => [], 'result_error' => [], 'result_total' => []];
+        }
+
+        $innerResult      = $raw['result'] ?? [];
+        $innerResultError = $raw['result_error'] ?? [];
+        $innerResultTotal = $raw['result_total'] ?? [];
+
         return [
-            'result'       => $result['result'] ?? [],
-            'result_error' => $result['result_error'] ?? [],
-            'result_total' => $result['result_total'] ?? [],
+            'result'       => is_array($innerResult)      ? $innerResult      : [],
+            'result_error' => is_array($innerResultError) ? $innerResultError : [],
+            'result_total' => is_array($innerResultTotal) ? $innerResultTotal : [],
         ];
     }
 

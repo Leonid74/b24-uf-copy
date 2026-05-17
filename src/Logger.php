@@ -50,6 +50,8 @@ final class Logger
 
     /**
      * Информационное сообщение.
+     *
+     * @param array<string, mixed> $context
      */
     public function info(string $message, array $context = []): void
     {
@@ -58,6 +60,8 @@ final class Logger
 
     /**
      * Предупреждение.
+     *
+     * @param array<string, mixed> $context
      */
     public function warning(string $message, array $context = []): void
     {
@@ -66,6 +70,8 @@ final class Logger
 
     /**
      * Ошибка.
+     *
+     * @param array<string, mixed> $context
      */
     public function error(string $message, array $context = []): void
     {

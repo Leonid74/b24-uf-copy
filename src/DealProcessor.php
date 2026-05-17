@@ -170,6 +170,10 @@ final class DealProcessor
      */
     private function processBatch(array $deals): void
     {
+        if ($deals === []) {
+            return;
+        }
+
         $this->state->incrementStat('scanned', count($deals));
 
         $updates = [];
@@ -233,7 +237,7 @@ final class DealProcessor
 
         $response = $this->client->batch($commands);
 
-        $errors       = $response['result_error'] ?? [];
+        $errors       = $response['result_error'];
         $successCount = count($commands) - count($errors);
 
         $this->state->incrementStat('updated', $successCount);
