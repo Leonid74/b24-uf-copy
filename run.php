@@ -21,24 +21,13 @@ declare(strict_types=1);
  * @license   The 3-Clause BSD License (https://opensource.org/license/bsd-3-clause)
  */
 
-use B24UfCopy\Bitrix24Client;
-use B24UfCopy\DealProcessor;
-use B24UfCopy\Logger;
-use B24UfCopy\ReportGenerator;
-use B24UfCopy\StateStorage;
+use Leonid74\B24UfCopy\Bitrix24Client;
+use Leonid74\B24UfCopy\DealProcessor;
+use Leonid74\B24UfCopy\Logger;
+use Leonid74\B24UfCopy\ReportGenerator;
+use Leonid74\B24UfCopy\StateStorage;
 
-// Простой автозагрузчик для классов из src/
-spl_autoload_register(static function (string $class): void {
-    $prefix = 'B24UfCopy\\';
-    if (!str_starts_with($class, $prefix)) {
-        return;
-    }
-    $relative = substr($class, strlen($prefix));
-    $path     = __DIR__ . '/src/' . str_replace('\\', '/', $relative) . '.php';
-    if (is_file($path)) {
-        require_once $path;
-    }
-});
+require_once __DIR__ . '/vendor/autoload.php';
 
 // Парсинг CLI-аргументов
 $options = parseArgs($argv);

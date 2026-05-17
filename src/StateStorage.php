@@ -17,7 +17,7 @@
 
 declare(strict_types=1);
 
-namespace B24UfCopy;
+namespace Leonid74\B24UfCopy;
 
 use JsonException;
 use Random\RandomException;

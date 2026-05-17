@@ -1,0 +1,27 @@
+{
+    "name": "b24uf/copy",
+    "description": "Копирование UF-полей сделок Bitrix24",
+    "type": "project",
+    "license": "BSD-3-Clause",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2",
+        "phpstan/phpstan-phpunit": "^2",
+        "phpunit/phpunit": "^11"
+    },
+    "autoload": {
+        "psr-4": {
+            "Leonid74\\B24UfCopy\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Leonid74\\B24UfCopy\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
