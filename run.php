@@ -105,7 +105,11 @@ try {
         'file' => $e->getFile(),
         'line' => $e->getLine(),
     ]);
-    $state->save();
+    try {
+        $state->save();
+    } catch (Throwable $saveError) {
+        $logger->error('Не удалось сохранить состояние: ' . $saveError->getMessage());
+    }
 }
 
 // Итоговая статистика

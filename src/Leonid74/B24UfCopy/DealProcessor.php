@@ -94,6 +94,8 @@ final class DealProcessor
      * Запустить обработку.
      *
      * @return bool true - если обработка завершена полностью; false - если прервана
+     *
+     * @throws \RuntimeException При неисправимой ошибке HTTP-клиента
      */
     public function run(): bool
     {
@@ -107,7 +109,11 @@ final class DealProcessor
         while (true) {
             if ($this->shouldStop) {
                 $this->logger->info('Обработка остановлена пользователем');
-                $this->state->save();
+                try {
+                    $this->state->save();
+                } catch (\Throwable $e) {
+                    $this->logger->error('Не удалось сохранить состояние при остановке: ' . $e->getMessage());
+                }
 
                 return false;
             }
@@ -133,7 +139,11 @@ final class DealProcessor
                 }
             }
             $this->state->setLastProcessedId($maxId);
-            $this->state->save();
+            try {
+                $this->state->save();
+            } catch (\Throwable $e) {
+                $this->logger->error('Не удалось сохранить состояние после пачки: ' . $e->getMessage());
+            }
         }
     }
 

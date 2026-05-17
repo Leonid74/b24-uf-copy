@@ -19,12 +19,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Leonid74\\B24UfCopy\\": "src/"
+            "Leonid74\\B24UfCopy\\": "src/Leonid74/B24UfCopy/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Leonid74\\B24UfCopy\\Tests\\": "tests/"
+            "Leonid74\\B24UfCopy\\Tests\\": "tests/Leonid74/B24UfCopy/"
         }
     },
     "config": {
