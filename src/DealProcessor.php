@@ -123,7 +123,11 @@ final class DealProcessor
 
             if ($deals === []) {
                 $this->logger->info('Сделки закончились - обработка завершена');
-                $this->state->markFinished();
+                try {
+                    $this->state->markFinished();
+                } catch (\Throwable $e) {
+                    $this->logger->error('Не удалось сохранить финальное состояние: ' . $e->getMessage());
+                }
 
                 return true;
             }

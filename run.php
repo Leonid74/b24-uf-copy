@@ -52,7 +52,12 @@ $state  = new StateStorage($config['state_file']);
 // Обработка флагов --restart / --resume
 if ($options['restart']) {
     $logger->info('Флаг --restart: сбрасываю состояние и начинаю с нуля');
-    $state->reset();
+    try {
+        $state->reset();
+    } catch (Throwable $e) {
+        fwrite(STDERR, "Ошибка сброса состояния: " . $e->getMessage() . "\n");
+        exit(1);
+    }
 } elseif ($state->isFinished() && !$options['resume']) {
     $logger->warning('Предыдущая обработка уже завершена. Для повторного прогона используйте --restart');
     exit(0);
